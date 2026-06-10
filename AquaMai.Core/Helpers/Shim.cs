@@ -125,122 +125,122 @@ public static class Shim
             }
         }
     }
-
-    public delegate string GetAccessTokenMethod(int index);
-
-    public static readonly GetAccessTokenMethod GetAccessToken = Iife<GetAccessTokenMethod>(() =>
-    {
-        var tOperationManager = Traverse.Create(Singleton<OperationManager>.Instance);
-        var tGetAccessToken = tOperationManager.Method("GetAccessToken", [typeof(int)]);
-        if (!tGetAccessToken.MethodExists())
-        {
-            return (index) => throw new MissingMethodException("No matching OperationManager.GetAccessToken() method found");
-        }
-        return (index) => tGetAccessToken.GetValue<string>(index);
-    });
-
-    public delegate PacketUploadUserPlaylog PacketUploadUserPlaylogCreator(int index, UserData src, int trackNo, Action<int> onDone, Action<PacketStatus> onError = null);
-
-    public static readonly PacketUploadUserPlaylogCreator CreatePacketUploadUserPlaylog = Iife<PacketUploadUserPlaylogCreator>(() =>
-    {
-        var type = typeof(PacketUploadUserPlaylog);
-        if (type.GetConstructor([typeof(int), typeof(UserData), typeof(int), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor1)
-        {
-            return (index, src, trackNo, onDone, onError) =>
-            {
-                var args = new object[] { index, src, trackNo, onDone, onError };
-                return (PacketUploadUserPlaylog)ctor1.Invoke(args);
-            };
-        }
-        else if (type.GetConstructor([typeof(int), typeof(UserData), typeof(int), typeof(string), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor2)
-        {
-            return (index, src, trackNo, onDone, onError) =>
-            {
-                var accessToken = GetAccessToken(index);
-                var args = new object[] { index, src, trackNo, accessToken, onDone, onError };
-                return (PacketUploadUserPlaylog)ctor2.Invoke(args);
-            };
-        }
-        else
-        {
-            throw new MissingMethodException("No matching PacketUploadUserPlaylog constructor found");
-        }
-    });
-
-    public delegate PacketUpsertUserAll PacketUpsertUserAllCreator(int index, UserData src, Action<int> onDone, Action<PacketStatus> onError = null);
-
-    public static readonly PacketUpsertUserAllCreator CreatePacketUpsertUserAll = Iife<PacketUpsertUserAllCreator>(() =>
-    {
-        var type = typeof(PacketUpsertUserAll);
-        if (type.GetConstructor([typeof(int), typeof(UserData), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor1)
-        {
-            return (index, src, onDone, onError) =>
-            {
-                var args = new object[] { index, src, onDone, onError };
-                return (PacketUpsertUserAll)ctor1.Invoke(args);
-            };
-        }
-        else if (type.GetConstructor([typeof(int), typeof(UserData), typeof(string), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor2)
-        {
-            return (index, src, onDone, onError) =>
-            {
-                var accessToken = GetAccessToken(index);
-                var args = new object[] { index, src, accessToken, onDone, onError };
-                return (PacketUpsertUserAll)ctor2.Invoke(args);
-            };
-        }
-        else
-        {
-            throw new MissingMethodException("No matching PacketUpsertUserAll constructor found");
-        }
-    });
-
-    public static IEnumerable<UserScore>[] GetUserScoreList(UserData userData)
-    {
-        var tUserData = Traverse.Create(userData);
-
-        var tScoreList = tUserData.Property("ScoreList");
-        if (tScoreList.PropertyExists())
-        {
-            return tScoreList.GetValue<List<UserScore>[]>();
-        }
-
-        var tScoreDic = tUserData.Property("ScoreDic");
-        if (tScoreDic.PropertyExists())
-        {
-            var scoreDic = tScoreDic.GetValue<Dictionary<int, UserScore>[]>();
-            return scoreDic.Select(dic => dic.Values).ToArray();
-        }
-
-        throw new MissingFieldException("No matching UserData.ScoreList/ScoreDic found");
-    }
-
-    private static ConstructorInfo UserRateCtor = typeof(UserRate).GetConstructors().First(it => it.GetParameters().Length is 4 or 5);
-
-    public static UserRate CreateUserRate(int musicId, int level, uint achievement, uint romVersion, PlayComboflagID comboflagID)
-    {
-        if (UserRateCtor.GetParameters().Length == 5)
-        {
-            return (UserRate)UserRateCtor.Invoke([musicId, level, achievement, romVersion, comboflagID]);
-        }
-        else
-        {
-            return (UserRate)UserRateCtor.Invoke([musicId, level, achievement, romVersion]);
-        }
-    }
-
-    private static readonly MethodBase NotificationFadeInMethod = typeof(ProcessManager).GetMethod(nameof(ProcessManager.NotificationFadeIn), BindingFlags.Instance | BindingFlags.Public);
-    public static void NotificationFadeInFix(this ProcessManager manager)
-    {
-        if (NotificationFadeInMethod.GetParameters().Length == 1)
-        {
-            NotificationFadeInMethod.Invoke(manager, [false]);
-        }
-        else
-        {
-            NotificationFadeInMethod.Invoke(manager, null);
-        }
-    }
+    
+    // public delegate string GetAccessTokenMethod(int index);
+    //
+    // public static readonly GetAccessTokenMethod GetAccessToken = Iife<GetAccessTokenMethod>(() =>
+    // {
+    //     var tOperationManager = Traverse.Create(Singleton<OperationManager>.Instance);
+    //     var tGetAccessToken = tOperationManager.Method("GetAccessToken", [typeof(int)]);
+    //     if (!tGetAccessToken.MethodExists())
+    //     {
+    //         return (index) => throw new MissingMethodException("No matching OperationManager.GetAccessToken() method found");
+    //     }
+    //     return (index) => tGetAccessToken.GetValue<string>(index);
+    // });
+    //
+    // public delegate PacketUploadUserPlaylog PacketUploadUserPlaylogCreator(int index, UserData src, int trackNo, Action<int> onDone, Action<PacketStatus> onError = null);
+    //
+    // public static readonly PacketUploadUserPlaylogCreator CreatePacketUploadUserPlaylog = Iife<PacketUploadUserPlaylogCreator>(() =>
+    // {
+    //     var type = typeof(PacketUploadUserPlaylog);
+    //     if (type.GetConstructor([typeof(int), typeof(UserData), typeof(int), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor1)
+    //     {
+    //         return (index, src, trackNo, onDone, onError) =>
+    //         {
+    //             var args = new object[] { index, src, trackNo, onDone, onError };
+    //             return (PacketUploadUserPlaylog)ctor1.Invoke(args);
+    //         };
+    //     }
+    //     else if (type.GetConstructor([typeof(int), typeof(UserData), typeof(int), typeof(string), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor2)
+    //     {
+    //         return (index, src, trackNo, onDone, onError) =>
+    //         {
+    //             var accessToken = GetAccessToken(index);
+    //             var args = new object[] { index, src, trackNo, accessToken, onDone, onError };
+    //             return (PacketUploadUserPlaylog)ctor2.Invoke(args);
+    //         };
+    //     }
+    //     else
+    //     {
+    //         throw new MissingMethodException("No matching PacketUploadUserPlaylog constructor found");
+    //     }
+    // });
+    //
+    // public delegate PacketUpsertUserAll PacketUpsertUserAllCreator(int index, UserData src, Action<int> onDone, Action<PacketStatus> onError = null);
+    //
+    // public static readonly PacketUpsertUserAllCreator CreatePacketUpsertUserAll = Iife<PacketUpsertUserAllCreator>(() =>
+    // {
+    //     var type = typeof(PacketUpsertUserAll);
+    //     if (type.GetConstructor([typeof(int), typeof(UserData), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor1)
+    //     {
+    //         return (index, src, onDone, onError) =>
+    //         {
+    //             var args = new object[] { index, src, onDone, onError };
+    //             return (PacketUpsertUserAll)ctor1.Invoke(args);
+    //         };
+    //     }
+    //     else if (type.GetConstructor([typeof(int), typeof(UserData), typeof(string), typeof(Action<int>), typeof(Action<PacketStatus>)]) is ConstructorInfo ctor2)
+    //     {
+    //         return (index, src, onDone, onError) =>
+    //         {
+    //             var accessToken = GetAccessToken(index);
+    //             var args = new object[] { index, src, accessToken, onDone, onError };
+    //             return (PacketUpsertUserAll)ctor2.Invoke(args);
+    //         };
+    //     }
+    //     else
+    //     {
+    //         throw new MissingMethodException("No matching PacketUpsertUserAll constructor found");
+    //     }
+    // });
+    //
+    // public static IEnumerable<UserScore>[] GetUserScoreList(UserData userData)
+    // {
+    //     var tUserData = Traverse.Create(userData);
+    //
+    //     var tScoreList = tUserData.Property("ScoreList");
+    //     if (tScoreList.PropertyExists())
+    //     {
+    //         return tScoreList.GetValue<List<UserScore>[]>();
+    //     }
+    //
+    //     var tScoreDic = tUserData.Property("ScoreDic");
+    //     if (tScoreDic.PropertyExists())
+    //     {
+    //         var scoreDic = tScoreDic.GetValue<Dictionary<int, UserScore>[]>();
+    //         return scoreDic.Select(dic => dic.Values).ToArray();
+    //     }
+    //
+    //     throw new MissingFieldException("No matching UserData.ScoreList/ScoreDic found");
+    // }
+    //
+    // private static ConstructorInfo UserRateCtor = typeof(UserRate).GetConstructors().First(it => it.GetParameters().Length is 4 or 5);
+    //
+    // public static UserRate CreateUserRate(int musicId, int level, uint achievement, uint romVersion, PlayComboflagID comboflagID)
+    // {
+    //     if (UserRateCtor.GetParameters().Length == 5)
+    //     {
+    //         return (UserRate)UserRateCtor.Invoke([musicId, level, achievement, romVersion, comboflagID]);
+    //     }
+    //     else
+    //     {
+    //         return (UserRate)UserRateCtor.Invoke([musicId, level, achievement, romVersion]);
+    //     }
+    // }
+    //
+    // private static readonly MethodBase NotificationFadeInMethod = typeof(ProcessManager).GetMethod(nameof(ProcessManager.NotificationFadeIn), BindingFlags.Instance | BindingFlags.Public);
+    // public static void NotificationFadeInFix(this ProcessManager manager)
+    // {
+    //     if (NotificationFadeInMethod.GetParameters().Length == 1)
+    //     {
+    //         NotificationFadeInMethod.Invoke(manager, [false]);
+    //     }
+    //     else
+    //     {
+    //         NotificationFadeInMethod.Invoke(manager, null);
+    //     }
+    // }
 
     public static readonly Action<bool> Set_GameManager_IsNormalMode = GameInfo.GameVersion < 25500 ? (_) => { } : (value) => { GameManager.IsNormalMode = value; };
     private static readonly Func<bool> IsKaleidxScopeModeGetter = GameInfo.GameVersion < 25000 ? () => false : () => GameManager.IsKaleidxScopeMode;
