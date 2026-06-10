@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using AMDaemon;
 using AquaMai.Config.Attributes;
@@ -22,8 +23,7 @@ public static class OptionLoadFix
     [HarmonyPatch(typeof(AppImage), "OptionMountRootPath", MethodType.Getter)]
     public static bool AppImageOptionMountRootPath(ref string __result)
     {
-        __result = string.IsNullOrWhiteSpace(overridePath) ? Application.streamingAssetsPath : overridePath;
-
+        __result = string.IsNullOrWhiteSpace(overridePath) ? Path.Combine(Application.dataPath,"../options") : overridePath;
         return false;
     }
 
