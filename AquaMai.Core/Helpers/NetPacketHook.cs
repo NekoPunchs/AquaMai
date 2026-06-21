@@ -1,26 +1,55 @@
-using System;
+using System.Collections;
+using System.Net;
+using System.Net.Security;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Net;
-using Net.Packet;
+using HarmonyLib;
+using Manager;
 using MelonLoader;
 using MelonLoader.TinyJSON;
-using HarmonyLib;
-using System.IO;
+using Net;
+using Net.Packet;
 
-namespace AquaMai.Core.Helpers;
-
-public class NetPacketHook
+namespace AquaMai.Core.Helpers
 {
-    // Returns true if the packet was modified
-    public delegate Variant NetPacketCompleteHook(string api, Variant request, Variant response);
-
-    public static event NetPacketCompleteHook OnNetPacketComplete;
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Packet), "ProcImpl")]
-    public static void PreProcImpl(Packet __instance)
+    public class NetPacketHook
     {
-        try
+        private static void PrintAllCookies(CookieContainer container)
+        {
+            var table = (Hashtable)typeof(CookieContainer).GetField("m_domainTable", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(container);
+
+            foreach (DictionaryEntry entry in table)
+            {
+                var domain = entry.Key as string;
+                var pathList = entry.Value.GetType().GetField("m_list", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(entry.Value) as SortedList;
+
+                foreach (DictionaryEntry pathEntry in pathList)
+                {
+                    var cookieCollection = pathEntry.Value as CookieCollection;
+                    if (cookieCollection == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (Cookie cookie in cookieCollection)
+                    {
+                        MelonLogger.Msg($"Name={cookie.Name}, Value={cookie.Value}, Path={cookie.Path}, Domain={cookie.Domain}");
+                    }
+                }
+            }
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(NetHttpClient), "CheckServerHash")]
+        public static bool PreCheckServerHash(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, ref bool __result)
+        {
+            MelonLogger.Msg("PreCheckServerHash hook."); 
+            __result = true;
+            return false;
+        }
+        
+        [HarmonyPrefix, HarmonyPatch(typeof(Packet), "ProcImpl")]
+        public static void PreProcImpl(Packet __instance)
         {
             if (
                 __instance.State == PacketState.Process &&
@@ -34,42 +63,23 @@ public class NetPacketHook
                 var decodedResponse = Encoding.UTF8.GetString(decryptedResponse);
                 var responseJson = JSON.Load(decodedResponse);
                 var requestJson = JSON.Load(netQuery.GetRequest());
-                var modified = false;
-                foreach (var handler in OnNetPacketComplete?.GetInvocationList())
+
+                var req = Traverse.Create(client).Field<HttpWebRequest>("_request").Value;
+                MelonLogger.Msg(api + " Req Cookie:");
+                PrintAllCookies(req.CookieContainer);
+
+                MelonLogger.Msg(api + " Resp Cookie:");
+                foreach (var obj in client.GetCookie())
                 {
-                    try
-                    {
-                        if (handler.DynamicInvoke(api, requestJson, responseJson) is Variant result)
-                        {
-                            responseJson = result;
-                            modified = true;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        MelonLogger.Error($"[NetPacketExtension] Error in handler: {e}");
-                    }
+                    MelonLogger.Msg(obj.ToString());
                 }
-                if (
-                    modified &&
-                    Traverse.Create(client).Field("_memoryStream").GetValue() is MemoryStream memoryStream &&
-                    !JsonHelper.DeepEqual(responseJson, JSON.Load(decodedResponse)))
+
+                MelonLogger.Msg(api + " Header:");
+                foreach (string headerName in req.Headers)
                 {
-                    var modifiedResponse = Encoding.UTF8.GetBytes(responseJson.ToJSON());
-                    if (!Shim.NetHttpClientDecryptsResponse)
-                    {
-                        modifiedResponse = Shim.EncryptNetPacketBody(modifiedResponse);
-                    }
-                    memoryStream.SetLength(0);
-                    memoryStream.Write(modifiedResponse, 0, modifiedResponse.Length);
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    MelonLogger.Msg($"[NetPacketExtension] Modified response for {api} ({decryptedResponse.Length} bytes -> {modifiedResponse.Length} bytes)");
+                    MelonLogger.Msg($"{headerName}: {req.Headers[headerName]}");
                 }
             }
-        }
-        catch (Exception e)
-        {
-            MelonLogger.Error($"[NetPacketExtension] Failed to process NetPacket: {e}");
         }
     }
 }
