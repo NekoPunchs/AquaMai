@@ -161,7 +161,9 @@ public class StartupDirectToGame
         var music = dataManager.GetMusic(musicId);
 
         Shim.Set_GameManager_IsNormalMode(true);
+        #if SDEZ
         GameManager.IsLongMusic = dataManager.IsLong(music.longMusic);
+        #endif
         GameManager.SelectedDeleteGhostID = GhostManager.GhostTarget.End;
         GameManager.SelectScoreType = GetScoreType(musicId);
         GameManager.MusicTrackNumber = 1;

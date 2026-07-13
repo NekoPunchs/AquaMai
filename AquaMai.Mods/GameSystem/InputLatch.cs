@@ -1,41 +1,39 @@
-namespace AquaMai.Mods.GameSystem;
+using WaveKits;
 
-public class InputLatch
+namespace AquaMai.Mods.GameSystem
 {
-    private ulong _current;
-    private ulong _accumulated;
-
-    public void Update(ulong state)
+    public class InputLatch
     {
-        _accumulated |= (state & ~_current);
-        _current = state;
-    }
+        private readonly AtomicLong _accumulated = new();
 
-    public ulong Read()
-    {
-        var result = _current | _accumulated;
-        _accumulated = 0;
-        return result;
-    }
+        public void Update(ulong state)
+        {
+            var value = CastUtil.ToInt64(state);
+            _accumulated.GetAndUpdate(x => x | value);
+        }
 
-    public bool ReadBit(int index)
-    {
-        var mask = 1UL << index;
-        var result = (_current & mask) != 0 || (_accumulated & mask) != 0;
-        _accumulated &= ~mask;
-        return result;
-    }
+        public ulong Read()
+        {
+            var result = _accumulated.GetAndUpdate(x => 0);
+            return CastUtil.ToUInt64(result);
+        }
 
-    public ulong ReadBits(ulong mask)
-    {
-        var result = (_current | _accumulated) & mask;
-        _accumulated &= ~mask;
-        return result;
-    }
+        public bool ReadBit(int index)
+        {
+            var mask = 1L << index;
+            return (_accumulated.GetAndUpdate(x => x & ~mask) & mask) != 0;
+        }
 
-    public void Clear()
-    {
-        _current = 0;
-        _accumulated = 0;
+        public ulong ReadBits(ulong mask)
+        {
+            var maskValue = CastUtil.ToInt64(mask);
+            var result = _accumulated.GetAndUpdate(x => x & ~maskValue) & maskValue;
+            return CastUtil.ToUInt64(result);
+        }
+
+        public void Clear()
+        {
+            _accumulated.Store(0);
+        }
     }
 }
