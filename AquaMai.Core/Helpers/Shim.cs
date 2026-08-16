@@ -166,7 +166,7 @@ public static class Shim
             throw new MissingMethodException("No matching PacketUploadUserPlaylog constructor found");
         }
     });
-
+#if !SDGB
     public delegate PacketUpsertUserAll PacketUpsertUserAllCreator(int index, UserData src, Action<int> onDone, Action<PacketStatus> onError = null);
 
     public static readonly PacketUpsertUserAllCreator CreatePacketUpsertUserAll = Iife<PacketUpsertUserAllCreator>(() =>
@@ -194,7 +194,7 @@ public static class Shim
             throw new MissingMethodException("No matching PacketUpsertUserAll constructor found");
         }
     });
-
+#endif
     public static IEnumerable<UserScore>[] GetUserScoreList(UserData userData)
     {
         var tUserData = Traverse.Create(userData);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !SDGB
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -278,3 +279,4 @@ public class ImmediateSave
         }
     }
 }
+#endif
